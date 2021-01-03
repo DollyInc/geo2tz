@@ -1,0 +1,59 @@
+version: 2.1
+workflows:
+  version: 2.1
+  build-push:
+    jobs:
+      - build
+
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.1
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - install-aws-venv
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - setup-env-variables
+      - build-docker-image
+      - push-docker-image
+
+commands:
+  install-aws-venv:
+    description: "Install AWS in venv"
+    steps:
+      - run:
+          name: Install awscli
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install awscli>=1.15.5
+
+  setup-env-variables:
+    description: "Setup common environment variables"
+    steps:
+      - run:
+          name: Setup ENV Variables
+          command: |
+            echo 'export FULL_IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/dolly/geo2tz:${CIRCLE_BRANCH}-${CIRCLE_SHA1}"' >> $BASH_ENV
+
+  build-docker-image:
+    description: "Build Docker Image"
+    steps:
+      - run:
+          name: Build Docker Image
+          command: |
+            docker build -t $FULL_IMAGE_NAME .
+# GIT_DESCR = $(shell git describe --tags --always)
+# docker build --build-arg DOCKER_TAG='$(GIT_DESCR)' -t $(DOCKER_IMAGE)  .
+
+  push-docker-image:
+    description: "Push Docker Image"
+    steps:
+      - run:
+          name: Push image
+          command: |
+            . venv/bin/activate
+            eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+            docker push $FULL_IMAGE_NAME
