@@ -4,6 +4,8 @@ workflows:
   build-push:
     jobs:
       - build
+          context:
+            - aws-config
 
 jobs:
   build:
@@ -57,3 +59,15 @@ commands:
             . venv/bin/activate
             eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
             docker push $FULL_IMAGE_NAME
+            #Add tag for shared repo
+            export FULL_IMAGE_NAME_SHARED="${AWS_ACCOUNT_ID_SHARED}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/geo2tz:${CIRCLE_BRANCH}-${CIRCLE_SHA1:0:6}-$(date +%s)"
+            docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/dolly/geo2tz:$CIRCLE_BRANCH-$CIRCLE_SHA1 ${FULL_IMAGE_NAME_SHARED}
+            #Assume role to push to shared account
+            export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+            $(aws sts assume-role \
+            --role-arn arn:aws:iam::$AWS_ACCOUNT_ID_SHARED:role/OrganizationAccountAdminAccessRole 
+            --role-session-name Session \
+            --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+            --output text))
+            eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+            docker push $FULL_IMAGE_NAME_SHARED
