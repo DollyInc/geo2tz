@@ -3,7 +3,7 @@ workflows:
   version: 2.1
   build-push:
     jobs:
-      - build
+      - build:
           context:
             - aws-config
 
