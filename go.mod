@@ -13,7 +13,5 @@ require (
 	github.com/spf13/viper v1.6.3
 	github.com/valyala/fasttemplate v1.1.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
-	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/crypto v0.17.0
 )
